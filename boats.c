@@ -232,7 +232,8 @@ void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
 	for (int i = 0; i < *num_boats; i++) {
 		if (!strcasecmp(token,(*boats)[i]->name)) {
 			printf("Boat already in system, please remove boat data first before changing it\n");
-				return;
+			free((*boats)[*num_boats]);
+			return;
 		}
 	}
 
@@ -243,6 +244,7 @@ void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
 	// If length is not valid, flag user
 	if (atoi(token) < 1 || atoi(token) > 100) {
 		printf("Length not suitable, please input a length within 1 and 100");
+		free((*boats)[*num_boats]);
 		return;
 	}
 
@@ -259,6 +261,7 @@ void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
 			// If slip number is not valid, flag user
 			if (atoi(token) < 1 || atoi(token) > 85) {
 				printf("Slip number not suitable, please input a slip number between 1 and 85 inclusive\n");
+				free((*boats)[*num_boats]);
 				return;
 			}
 			break;
@@ -269,6 +272,7 @@ void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
 			// If bay letter is not valid, flag user
 			if (strlen(token) != 1 || !isalnum(token[0]) || !isupper(token[0])) {
 				printf("Bay letter not suitable, please input one capital letter from A-Z\n");
+				free((*boats)[*num_boats]);
 				return;
 			}
 			break;
@@ -282,12 +286,14 @@ void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
 			// If storage space number is not valid, flag user
 			if (atoi(token) < 1 || atoi(token) > 50) {
                                 printf("Storage space number not suitable, please input a storage space number between 1 and 50 inclusive\n");
+				free((*boats)[*num_boats]);
                                 return;
                         }
 			break;
 
 		default:
 			printf("Unknown storage location\n");
+			free((*boats)[*num_boats]);
 			return;
 	}
 
