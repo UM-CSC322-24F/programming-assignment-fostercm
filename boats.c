@@ -1,10 +1,16 @@
+//--------------------------------------------------------------
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
+//--------------------------------------------------------------
+//
 #define MAX_BOATS 120
 #define MAX_STRING 127
 
+//--------------------------------------------------------------
 typedef char String[MAX_STRING];
 
 typedef enum {
@@ -56,17 +62,19 @@ typedef enum {
 	error
 } Command;
 
-//---------------------------------------------------------
+//--------------------------------------------------------------
 
+// A function for handling string input
 void input_string(String string) {
 
+	// Get string and replace newline character with termination character
 	fgets(string, MAX_STRING, stdin);
 	string[strcspn(string, "\n")] = '\0';
 }
 
+//--------------------------------------------------------------
 
-//---------------------------------------------------------
-
+// A function for transferring from string to storage datatype
 StorageType string_to_storage(String storage_string) {
 
 	if (!strcasecmp(storage_string,"slip"))
@@ -80,6 +88,9 @@ StorageType string_to_storage(String storage_string) {
 	return no_place;
 }
 
+//--------------------------------------------------------------
+
+// A function for tranferring from storage datatype to string
 char* storage_to_string(StorageType type) {
 
 	switch (type) {
@@ -99,9 +110,11 @@ char* storage_to_string(StorageType type) {
 	}
 }
 
-//---------------------------------------------------------
+//--------------------------------------------------------------
 
+// A function for tranferring from string to command datatype
 Command string_to_command(String command_string) {
+
 	if (!strcasecmp(command_string,"I"))
                 return I;
         if (!strcasecmp(command_string,"A"))
@@ -117,18 +130,26 @@ Command string_to_command(String command_string) {
         return error;
 }
 
+//--------------------------------------------------------------
+
+// A function for comparing boat names for sorting
 int boat_comparator(const void *a, const void *b) {
 
+	// Get the names of the two boat pointers and compare them
 	Boat* boat_a = *(Boat**) a;
 	Boat* boat_b = *(Boat**) b;
 
 	return strcasecmp(boat_a->name,boat_b->name);
 }
 
+//--------------------------------------------------------------
+
+// A function for showing the current boat inventory
 void inventory(Boat** inventory,int num_boats) {
 
         String information;
 
+	// For each boat, transform the unique information of its storage type into a string
         for (int i = 0; i < num_boats; i++) {
 
                 switch (inventory[i]->place) {
@@ -150,6 +171,7 @@ void inventory(Boat** inventory,int num_boats) {
                                 break;
                 }
 
+		// Output boat information
                 printf("%-20s\t%d'\t%8s %6s\t Owes $%7.2f\n",
                                 inventory[i]->name,
                                 inventory[i]->length,
@@ -159,6 +181,9 @@ void inventory(Boat** inventory,int num_boats) {
         }
 }
 
+//--------------------------------------------------------------
+
+// A function for adding a new boat to inventory
 void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
 
 	char* token;
@@ -203,9 +228,23 @@ void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
 	token = strtok(line, ",");
 	strcpy((*boats)[*num_boats]->name,token);
 
+	// If name already exists, flag user
+	for (int i = 0; i < *num_boats; i++) {
+		if (!strcasecmp(token,(*boats)[i]->name)) {
+			printf("Boat already in system, please remove boat data first before changing it\n");
+				return;
+		}
+	}
+
 	// Read length
 	token = strtok(NULL, ",");
 	(*boats)[*num_boats]->length = atoi(token);
+
+	// If length is not valid, flag user
+	if (atoi(token) < 1 || atoi(token) > 100) {
+		printf("Length not suitable, please input a length within 1 and 100");
+		return;
+	}
 
 	// Read Storage location
 	token = strtok(NULL, ",");
@@ -216,16 +255,37 @@ void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
 	switch ((*boats)[*num_boats]->place) {
 		case slip:
 			(*boats)[*num_boats]->info.slip.slip_number = atoi(token);
+
+			// If slip number is not valid, flag user
+			if (atoi(token) < 1 || atoi(token) > 85) {
+				printf("Slip number not suitable, please input a slip number between 1 and 85 inclusive\n");
+				return;
+			}
 			break;
+
 		case land:
 			(*boats)[*num_boats]->info.land.bay_letter = token[0];
+
+			// If bay letter is not valid, flag user
+			if (strlen(token) != 1 || !isalnum(token[0]) || !isupper(token[0])) {
+				printf("Bay letter not suitable, please input one capital letter from A-Z\n");
+				return;
+			}
 			break;
+
 		case trailor:
 			strcpy((*boats)[*num_boats]->info.trailor.trailor_tag,token);
 			break;
 		case storage:
 			(*boats)[*num_boats]->info.storage.storage_number = atoi(token);
+			
+			// If storage space number is not valid, flag user
+			if (atoi(token) < 1 || atoi(token) > 50) {
+                                printf("Storage space number not suitable, please input a storage space number between 1 and 50 inclusive\n");
+                                return;
+                        }
 			break;
+
 		default:
 			printf("Unknown storage location\n");
 			return;
@@ -242,15 +302,24 @@ void add_boat(Boat*** boats,int* num_boats,int* boat_spots,char* line) {
         qsort(*boats,*num_boats,sizeof(Boat*),boat_comparator);
 }
 
+//--------------------------------------------------------------
+
+// A function to remove boats from the inventory
 void remove_boat(Boat** boats,int* num_boats,char* name) {
 
 	for (int i = 0; i < *num_boats; i++) {
 
+		// If the boat is in inventory
 		if (!strcasecmp(boats[i]->name,name)) {
+
+			// Free the boat's information
 			free(boats[i]);
+
+			// Have the last boat take its place and decrement num_boats
 			boats[i] = boats[*num_boats-1];
 			*num_boats -= 1;
 			
+			// Sort remaining boats
 			qsort(boats,*num_boats,sizeof(Boat*),boat_comparator);
 			return;
 		}
@@ -260,19 +329,27 @@ void remove_boat(Boat** boats,int* num_boats,char* name) {
 
 }
 
+//--------------------------------------------------------------
+
+// A function to handle making payments
 void payment(Boat** boats,int num_boats,char* name) {
 
 	char payment_input[MAX_STRING];
 	double payment;
+
 	for (int i = 0; i < num_boats; i++) {
 
+		// If the boat is in inventory
                 if (!strcasecmp(boats[i]->name,name)) {
+
+			// Get the desired payment
 			printf("%-56s : ","Please enter the amount to be paid");
 			input_string(payment_input);
 			payment = atof(payment_input);
 
+			// Check if its a valid payment and proceed accordingly
                         if (payment > boats[i]->owed) 
-				printf("That is more than the amount owed, $%lf",boats[i]->owed);
+				printf("That is more than the amount owed, $%.2lf",boats[i]->owed);
 			else
 				boats[i]->owed -= payment;
                         return;
@@ -283,10 +360,14 @@ void payment(Boat** boats,int num_boats,char* name) {
 
 }
 
+//--------------------------------------------------------------
+
+// A function to update payments for the next month
 void month_forward(Boat** boats,int num_boats) {
 
 	for (int i = 0; i < num_boats; i++) {
 
+		// For each boat, update the amount owed depending on its length and storage location
 		switch (boats[i]->place) {
 			case slip:
 				boats[i]->owed += 12.50 * boats[i]->length;
@@ -306,17 +387,24 @@ void month_forward(Boat** boats,int num_boats) {
 	}
 }
 
+//--------------------------------------------------------------
+
+// A function to control the input of commands
 void command_terminal(Boat** boats,int* num_boats,int* boat_spots) {
 
 	String input;
 	Command command;
 	char data[MAX_STRING + 30];
 
+	// Command input loop
 	while (1) {
+
+		// Query and input command
 		printf("\n%55s : ","(I)nventory, (A)dd, (R)emove, (P)ayment, (M)onth, e(X)it");
 		input_string(input);
 		command = string_to_command(input);
 
+		// Proceed based on specific command
 		switch (command) {
 			case I:
 				inventory(boats,*num_boats);
@@ -340,19 +428,19 @@ void command_terminal(Boat** boats,int* num_boats,int* boat_spots) {
 				month_forward(boats,*num_boats);
 				break;
 			case X:
-				break;
+				return;
                 	case error:
                         	printf("Invalid option %s\n",input);
 				break;
                 	default:
                         	exit(EXIT_FAILURE);
 		}
-		
-		if (command == X)
-			break;
 	}
 }
 
+//--------------------------------------------------------------
+
+// A function to initialize the array of boats based on the input file
 void initialize(Boat*** boats,int* num_boats,int* boat_spots,char* file_name) {
 
 	FILE *file;
@@ -378,17 +466,21 @@ void initialize(Boat*** boats,int* num_boats,int* boat_spots,char* file_name) {
         	fclose(file);
 
 	}
+
+	// If nothing in file, the array with start empty
 }
 
-//---------------------------------------------------------
+//--------------------------------------------------------------
 
 void save(Boat** boats,int num_boats,char* output_name) {
 
 	FILE *file;
 	String information;
 
+	// Open / Create file
 	file = fopen(output_name,"w+");
 
+	// Each row of the file stores the information of a boat specific to its storage location
 	for (int i = 0; i < num_boats; i++) {
 		
 		switch (boats[i]->place) {
@@ -427,10 +519,12 @@ void save(Boat** boats,int num_boats,char* output_name) {
 		}
 	}
 
+	// Close file
 	fclose(file);
 
 }
 
+//--------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
 
@@ -438,35 +532,32 @@ int main(int argc, char *argv[]) {
 	int num_boats = 0;
 	int boat_spots = 1;
 
-	
+	// No file for input/output provided
         if (argc == 1) {
 		printf("Please input a file to read/store to\n");
 		return EXIT_FAILURE;
 	}
 
+	// Initialize array
 	initialize(&boats,&num_boats,&boat_spots,argv[1]);
 
+	// Begin command cycle
 	printf("\nWelcome to the Boat Management System\n");
 	printf("--------------------------------------\n");
-
 	command_terminal(boats,&num_boats,&boat_spots);
-
 	printf("\nExiting the Boat Management System\n");
 
+	// Save current boat array
 	save(boats, num_boats, argv[1]);
 
+	// Free the memory of each boat in the array
 	for (int i = 0; i < num_boats; i++)
 		free(boats[i]);
 
+	// Free the memory of the array
 	free(boats);
 
-	return 0;
-
+	return EXIT_SUCCESS;
 }
 
-
-
-
-
-
-
+//--------------------------------------------------------------
